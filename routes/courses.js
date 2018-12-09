@@ -1,28 +1,96 @@
 'use strict';
 
-var express = require("express");
-var router = express.Router();
+const express = require("express");
+const router = express.Router();
+const Course = require("../models").Course;
+const User = require("../models").User;
+
+const auth = require("basic-auth");
+const bcrypt = require('bcrypt');
+
+router.param("id", function(req,res,next,id){
+    Course.findById(id, function(err, doc){
+        if(err) return next(err);
+        if(!doc) {
+            err = new Error("Not Found");
+            err.status = 404;
+            return next(err);
+        }
+        req.course = doc;
+        return next();
+    });
+});
+
+// A middleware function that attempts to get the user credentials from the Authorization header set on the request
+router.use(function(req, res, next){
+    if(auth(req)){
+        User.findOne({emailAddress: auth(req).name})
+          .exec(function(err, user){
+            if(user){
+                bcrypt.compare(auth(req).pass, user.password, function(err,res){
+                    if (res){
+                        req.user = user;
+                        next();
+                    } else {
+                        const err = new Error("You are currently not authorized.")
+                        err.status = 401;
+                        return next(err);
+                    }
+                });
+            } else {
+                const err = new Error("You are not logged in. Please try again.")
+                err.status = 401;
+                return next(err);
+            }
+        })
+    }
+});
 
 // The Course Routes
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
-router.get("/courses", function (req, res) {
-    res.json({response: "You sent me a GET request for courses"});
-  })
+router.get("/courses", function (req, res, next) {
+    Course.find({}) 
+             .populate("user", "firstName lastName")
+             .exec(function(err, courses){
+                if(err) return next(err);
+                res.status(200);
+                res.json(courses);
+    });  
+});
 // GET /api/courses/:id 200 - Returns a the course (including the user that owns the course) for the provided course ID
-router.get("/courses/:id", function (req, res) {
-    res.json({response: "You sent me a GET request for courses ID" + req.params.id});
-  })
+router.get("/courses/:id", function(req, res) {
+    Course.findById(req.params.id) 
+             .populate("user", "firstName lastName")
+             .exec(function(err, course){
+                if(err) return next(err);
+                res.status(200);
+                res.json(course);
+    });});
 // POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
-router.post("/courses", function (req, res) {
-    res.json({response: "You sent me a POST request"});
-  })
+router.post("/courses", function (req, res, next) {
+    const course = new Course(req.body);
+    course.save(function(err, course){
+        if(err) return next(err);
+        res.location('/');
+        res.json(course);
+        res.status(201);
+    });
+});
 // PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put("/courses", function (req, res) {
-    res.json({response: "You sent me a PUT request"});
-  })
+router.put("/courses/:id", function (req, res) {
+    req.course.update(req.body, function(err, result){
+        if(err) return next(err);
+        res.json(result);
+    });
+  });
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 router.delete("/courses/:id", function (req, res) {
-    res.json({response: "You sent me a PUT request" + req.params.id});
-  })
+    req.course.remove(function(err){
+        req.course.save(function(err, course){
+            if(err) return next(err);
+            res.json(course);
+        })
+    })
+});
 
 module.exports = router;

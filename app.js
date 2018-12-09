@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const courses = require("./routes/courses");
 const users = require("./routes/users");
 const mongoose = require("mongoose");
+const jsonParser = require('body-parser').json;
 
 //configure mongoose
 mongoose.connect("mongodb://localhost:27017/fsjstd-restapi");
@@ -30,6 +31,9 @@ const app = express();
 
 // setup morgan which gives us http request logging
 app.use(morgan('dev'));
+
+//Parses response object
+app.use(jsonParser());
 
 // TODO setup your api routes here
 app.use("/api", users);
