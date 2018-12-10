@@ -36,6 +36,7 @@ app.use(morgan('dev'));
 app.use(jsonParser());
 
 // TODO setup your api routes here
+// app.use("/", );
 app.use("/api", users);
 app.use("/api", courses);
 

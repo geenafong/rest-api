@@ -6,7 +6,7 @@ const Course = require("../models").Course;
 const User = require("../models").User;
 
 const auth = require("basic-auth");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 router.param("id", function(req,res,next,id){
     Course.findById(id, function(err, doc){
@@ -68,29 +68,50 @@ router.get("/courses/:id", function(req, res) {
     });});
 // POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
 router.post("/courses", function (req, res, next) {
-    const course = new Course(req.body);
-    course.save(function(err, course){
-        if(err) return next(err);
-        res.location('/');
-        res.json(course);
-        res.status(201);
-    });
+    if(req.user){
+        if(req.body.description && req.body.title) {
+            const newCourse = new Course(req.body);
+            Course.create(newCourse, function(err, course){
+                if(err) return next(err);
+                res.location('/');
+                res.sendStatus(201);
+            });
+        } else {
+            const err = new Error("You must enter a title and description");
+            err.status = 400;
+            return next(err);
+        }
+    };
 });
 // PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put("/courses/:id", function (req, res) {
-    req.course.update(req.body, function(err, result){
-        if(err) return next(err);
-        res.json(result);
-    });
+router.put("/courses/:id", function (req, res, next) {
+    if (req.course.user.toString() === req.user._id.toString()){
+        req.course.update(req.body, function(err, result){
+            if(err) return next(err);
+            return res.sendStatus(204);
+        });
+    } else {
+        const err = new Error('You are not able to edit this course because you did not create it.');
+        err.status = 403;
+        next(err);
+    }
   });
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 router.delete("/courses/:id", function (req, res) {
-    req.course.remove(function(err){
-        req.course.save(function(err, course){
-            if(err) return next(err);
-            res.json(course);
-        })
-    })
+    if(req.user){
+        if (req.course.user.toString() === req.user._id.toString()){
+            req.course.remove(function(err){
+                req.course.save(function(err, course){
+                    if(err) return next(err);
+                    return res.sendStatus(204);
+                });
+        });
+    } else {
+        const err = new Error("You are not able to delete this course because you did not create it.");
+        err.status = 403;
+        return next(err);
+    }
+};
 });
 
 module.exports = router;
