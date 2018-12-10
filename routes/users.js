@@ -51,27 +51,18 @@ router.get("/users", function (req, res, next) {
 });
 // POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
 router.post("/users", function (req, res, next) {
-    User.findOne({emailAddress: req.body.emailAddress}, 'emailAddress', function(err, res){
-        if(!res){
-            next();
             if(req.body.emailAddress && /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(req.body.emailAddress)){
-                const newUser = req.body;
-                User.create(newUser, function(err, user){
-                    if(err) return next();
+                const newUser = new User(req.body);
+                User.create(newUser, function(err){
+                    if(err) return next(err);
                     res.location('/');
                     res.sendStatus(201);
                 }); 
-            } else {
-                const err = new Error("Please enter a valid email address");
+            }else{
+                const err = new Error("Please enter a valid email address.");
                 err.status = 400;
-                return next(err);
-            }
-        } else{
-            const err = new Error("This email already exists.");
-            err.status = 400;
-            return next(err); 
+                return next(err); 
         }
-    });
 });
 
 module.exports = router;

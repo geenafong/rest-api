@@ -41,6 +41,7 @@ const CourseSchema = new Schema({
     materialsNeeded: String
 })
 
+//To check the password
 UserSchema.pre("save", function(next){
     let user = this;
     bcrypt.genSalt(saltRounds, function (err, salt) {
@@ -52,6 +53,18 @@ UserSchema.pre("save", function(next){
         });
       });
     });
+UserSchema.pre("save", function(next){
+    let user = this;
+    User.findOne({emailAddress: this.emailAddress}, 'emailAddress', function(err, res){
+        if (res){
+            const err = new Error("Please enter a new email, that email already exists.");
+            err.status = 400;
+            return next(err);
+        } else {
+            next();
+        }
+    })
+})
 
 const User = mongoose.model("User", UserSchema);
 const Course = mongoose.model("Course", CourseSchema);
