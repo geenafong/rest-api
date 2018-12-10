@@ -35,8 +35,7 @@ app.use(morgan('dev'));
 //Parses response object
 app.use(jsonParser());
 
-// TODO setup your api routes here
-// app.use("/", );
+// api routes 
 app.use("/api", users);
 app.use("/api", courses);
 

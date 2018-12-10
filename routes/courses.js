@@ -8,6 +8,7 @@ const User = require("../models").User;
 const auth = require("basic-auth");
 const bcrypt = require('bcryptjs');
 
+//To check for IDs
 router.param("id", function(req,res,next,id){
     Course.findById(id, function(err, doc){
         if(err) return next(err);
@@ -46,7 +47,6 @@ router.use(function(req, res, next){
     }
 });
 
-// The Course Routes
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get("/courses", function (req, res, next) {
     Course.find({}) 
