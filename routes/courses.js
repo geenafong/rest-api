@@ -22,30 +22,6 @@ router.param("id", function(req,res,next,id){
     });
 });
 
-// A middleware function that attempts to get the user credentials from the Authorization header set on the request
-router.use(function(req, res, next){
-    if(auth(req)){
-        User.findOne({emailAddress: auth(req).name})
-          .exec(function(err, user){
-            if(user){
-                bcrypt.compare(auth(req).pass, user.password, function(err,res){
-                    if (res){
-                        req.user = user;
-                        next();
-                    } else {
-                        const err = new Error("You are currently not authorized.")
-                        err.status = 401;
-                        return next(err);
-                    }
-                });
-            } else {
-                const err = new Error("You are not logged in. Please try again.")
-                err.status = 401;
-                return next(err);
-            }
-        })
-    }
-});
 
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get("/courses", function (req, res, next) {
@@ -83,6 +59,32 @@ router.post("/courses", function (req, res, next) {
         }
     };
 });
+
+// A middleware function that attempts to get the user credentials from the Authorization header set on the request
+router.use(function(req, res, next){
+    if(auth(req)){
+        User.findOne({emailAddress: auth(req).name})
+          .exec(function(err, user){
+            if(user){
+                bcrypt.compare(auth(req).pass, user.password, function(err,res){
+                    if (res){
+                        req.user = user;
+                        next();
+                    } else {
+                        const err = new Error("You are currently not authorized.")
+                        err.status = 401;
+                        return next(err);
+                    }
+                });
+            } else {
+                const err = new Error("You are not logged in. Please try again.")
+                err.status = 401;
+                return next(err);
+            }
+        })
+    }
+});
+
 // PUT /api/courses/:id 204 - Updates a course and returns no content
 router.put("/courses/:id", function (req, res, next) {
     if (req.course.user.toString() === req.user._id.toString()){
