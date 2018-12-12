@@ -97,21 +97,17 @@ router.put("/courses/:id", function (req, res, next) {
     }
   });
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
-router.delete("/courses/:id", function (req, res) {
+router.delete("/courses/:id", function (req, res, next) {
     if(req.user){
         if (req.course.user.toString() === req.user._id.toString()){
-            req.course.remove(function(err){
-                req.course.save(function(err, course){
-                    if(err) return next(err);
-                    return res.sendStatus(204);
-                });
-        });
+            req.course.remove();
+            res.sendStatus(204);
+        };
     } else {
         const err = new Error("You are not able to delete this course because you did not create it.");
         err.status = 403;
         return next(err);
     }
-};
 });
 
 module.exports = router;
